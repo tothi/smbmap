@@ -43,6 +43,7 @@ Main arguments:
   -u USERNAME           Username, if omitted null session assumed
   -p PASSWORD           Password or NTLM hash
   --prompt              Prompt for a password
+  -k                    Use Kerberos authentication (ccache ticket should be in KRB5CCNAME; suppresses -u, -p and -d for authentication; command execution is still not supported)
   -s SHARE              Specify a share (default C$), ex 'C$'
   -d DOMAIN             Domain name (default WORKGROUP)
   -P PORT               SMB port (default 445)
@@ -115,6 +116,7 @@ Examples:
 $ python smbmap.py -u jsmith -p password1 -d workgroup -H 192.168.0.1
 $ python smbmap.py -u jsmith -p 'aad3b435b51404eeaad3b435b51404ee:da76f2c4c96028b7a6111aef4a50a94d' -H 172.16.0.20
 $ python smbmap.py -u 'apadmin' -p 'asdf1234!' -d ACME -H 10.1.3.30 -x 'net group "Domain Admins" /domain'
+$ KRB5CCNAME=/tmp/krb5cc_1001 python smbmap.py -k -H fs01.acme.local
 ```
 
 ## Default Output:

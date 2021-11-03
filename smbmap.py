@@ -50,6 +50,7 @@ PSUTIL_SHARE = ''.join(random.sample('ABCDEFGHIGJLMNOPQRSTUVWXYZ', 10))
 VERBOSE = False
 USE_TERMCOLOR=True
 SEND_UPDATE_MSG=True
+DOKERBEROS = False
 
 banner = r"""
     ________  ___      ___  _______   ___      ___       __         _______
@@ -1157,8 +1158,11 @@ def login(host):
             smbconn = SMBConnection(host['ip'], host['ip'], sess_port=host['port'], timeout=10)
         else:
             smbconn = SMBConnection('*SMBSERVER', host['host'], sess_port=host['port'], timeout=10)
-        
-        smbconn.login(host['user'], host['passwd'], host['domain'], host['lmhash'], host['nthash'])
+
+        if DOKERBEROS:
+            smbconn.kerberosLogin('', '')
+        else:
+            smbconn.login(host['user'], host['passwd'], host['domain'], host['lmhash'], host['nthash'])
         
         return smbconn
 
@@ -1173,6 +1177,7 @@ if __name__ == "__main__":
     example += '$ python smbmap.py -u jsmith -p password1 -d workgroup -H 192.168.0.1\n'
     example += '$ python smbmap.py -u jsmith -p \'aad3b435b51404eeaad3b435b51404ee:da76f2c4c96028b7a6111aef4a50a94d\' -H 172.16.0.20\n'
     example += '$ python smbmap.py -u \'apadmin\' -p \'asdf1234!\' -d ACME -Hh 10.1.3.30 -x \'net group "Domain Admins" /domain\'\n'
+    example += '$ KRB5CCNAME=/tmp/krb5cc_1001 python smbmap.py -k -H fs01.acme.local\n'
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=banner, epilog=example)
 
@@ -1185,6 +1190,7 @@ if __name__ == "__main__":
     sgroup.add_argument("-u", metavar="USERNAME", dest='user', default='', help="Username, if omitted null session assumed")
     pass_group.add_argument("-p", metavar="PASSWORD", dest='passwd', default='', help="Password or NTLM hash")
     pass_group.add_argument("--prompt", action='store_true', default=False, help="Prompt for a password")
+    sgroup.add_argument("-k", action='store_true', dest='kerberos', default=False, help="Use Kerberos authentication (ccache ticket should be in KRB5CCNAME; suppresses -u, -p and -d for authentication; command execution is still not supported)")
     sgroup.add_argument("-s", metavar="SHARE", dest='share', default='C$', help="Specify a share (default C$), ex 'C$'")
     sgroup.add_argument("-d", metavar="DOMAIN", dest='domain', default="WORKGROUP", help="Domain name (default WORKGROUP)")
     sgroup.add_argument("-P", metavar="PORT", dest='port', type=int, default=445, help="SMB port (default 445)")
@@ -1343,7 +1349,10 @@ if __name__ == "__main__":
 
     if args.admin:
         mysmb.verbose = False
-    
+
+    if args.kerberos:
+        DOKERBEROS = True
+        
     connections = []
     login_worker = Pool(40)
     connections = login_worker.map(login, hosts)
